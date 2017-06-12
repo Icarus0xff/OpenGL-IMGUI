@@ -3,8 +3,11 @@ project(OpenGl CXX)
 
 set(CMAKE_CXX_COMPILER "clang++")
 set(CMAKE_CXX_FLAGS "-std=c++11")
-##set(CMAKE_CXX_FLAGS "-lglfw3")
 
+
+
+include_directories(./Libs/imgui)
+include_directories(./Include)
 aux_source_directory(./Src SRC_LIST)
 add_executable(opengl ${SRC_LIST})
 target_link_libraries(opengl -lstdc++)
