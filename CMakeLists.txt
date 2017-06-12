@@ -7,9 +7,11 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 
 
 include_directories(./Libs/imgui)
+include_directories(./Libs/gl3w)
 include_directories(./Include)
 aux_source_directory(./Src SRC_LIST)
-add_executable(opengl ${SRC_LIST})
+add_executable(opengl ${SRC_LIST} ./Libs/imgui/imgui.o ./Libs/imgui/imgui_draw.o ./Libs/imgui/imgui_demo.o ./Libs/gl3w/GL/gl3w.o)
+
 target_link_libraries(opengl -lstdc++)
 target_link_libraries(opengl -lglfw3)
 target_link_libraries(opengl -lsoil)

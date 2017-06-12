@@ -210,6 +210,13 @@ int main() {
   glUniform1i(glGetUniformLocation(lightingShader.Program, "material.specular"),
               1);
 
+
+  //Set Imgui
+  ImGui_ImplGlfwGL3_Init(window, true);
+  bool show_test_window = true;
+  bool show_another_window = false;
+  ImVec4 clear_color = ImColor(114, 144, 154);
+
   // Game loop
   while (!glfwWindowShouldClose(window)) {
     // Calculate deltatime of current frame
@@ -220,7 +227,15 @@ int main() {
     // Check if any events have been activiated (key pressed, mouse moved etc.)
     // and call corresponding response functions
     glfwPollEvents();
+    ImGui_ImplGlfwGL3_NewFrame();
+
     do_movement();
+
+    {
+      static float f = 0.0f;
+      ImGui::Text("Hello, world!");
+
+    }
 
     // Clear the colorbuffer
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -306,6 +321,8 @@ int main() {
     glBindVertexArray(0);
 
     // Swap the screen buffers
+    //Rendering
+    ImGui::Render();
     glfwSwapBuffers(window);
   }
 
