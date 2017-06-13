@@ -227,7 +227,7 @@ int main() {
     lastFrame = currentFrame;
     if (is_mouse) {
       glfwSetCursorPosCallback(window, mouse_callback);
-    }else{
+    } else {
       glfwSetCursorPosCallback(window, nullptr);
     }
 
@@ -235,7 +235,6 @@ int main() {
     // and call corresponding response functions
     glfwPollEvents();
     ImGui_ImplGlfwGL3_NewFrame();
-
     do_movement();
 
     {
