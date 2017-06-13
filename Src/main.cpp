@@ -47,6 +47,10 @@ glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 GLfloat deltaTime = 0.0f; // Time between current frame and last frame
 GLfloat lastFrame = 0.0f; // Time of last frame
 
+// meshes
+unsigned int planeVAO;
+
+
 // The MAIN function, from here we start the application and run the game loop
 int main() {
   // Init GLFW
@@ -86,6 +90,7 @@ int main() {
   // Build and compile our shader program
   Shader lightingShader("lighting.vs", "lighting.frag");
   Shader lampShader("lamp.vs", "lamp.frag");
+
 
   // Set up vertex data (and buffer(s)) and attribute pointers
   GLfloat vertices[] = {
@@ -165,6 +170,35 @@ int main() {
   glEnableVertexAttribArray(0);
   glBindVertexArray(0);
 
+
+  // set up vertex data (and buffer(s)) and configure vertex attributes
+  // ------------------------------------------------------------------
+  float planeVertices[] = {
+    // positions            // normals         // texcoords
+    25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+    -25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+    -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+
+    25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+    -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+    25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  25.0f, 25.0f
+  };
+
+  // plane VAO
+  unsigned int planeVBO;
+  glGenVertexArrays(1, &planeVAO);
+  glGenBuffers(1, &planeVBO);
+  glBindVertexArray(planeVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+  glBindVertexArray(0);
+
   // Load textures
   GLuint diffuseMap, specularMap, emissionMap;
   glGenTextures(1, &diffuseMap);
@@ -207,6 +241,12 @@ int main() {
               0);
   glUniform1i(glGetUniformLocation(lightingShader.Program, "material.specular"),
               1);
+
+  lampShader.Use();
+  glUniform1i(glGetUniformLocation(lampShader.Program, "texture1"),
+              1);
+  glUniform1i(glGetUniformLocation(lampShader.Program, "texture2"),
+              0);
 
 
   //Set Imgui
@@ -309,9 +349,13 @@ int main() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, specularMap);
 
+
+    // Draw floor
+    glm::mat4 model;
+   
+
     // Draw 10 containers with the same VAO and VBO information; only their
     // world space coordinates differ
-    glm::mat4 model;
     glBindVertexArray(containerVAO);
 
     int ii = 0;
@@ -321,9 +365,27 @@ int main() {
       GLfloat angle = 20.0f * ii++;
       model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
       glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
       glDrawArrays(GL_TRIANGLES, 0, 36);
     }
+
+
+    
+
+    //Draw the floor
+    lampShader.Use();
+    // Get the uniform locations
+    modelLoc = glGetUniformLocation(lampShader.Program, "model");
+    viewLoc = glGetUniformLocation(lampShader.Program, "view");
+    projLoc = glGetUniformLocation(lampShader.Program, "projection");
+
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    model = glm::mat4();
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+    glBindVertexArray(planeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glBindVertexArray(0);
 
