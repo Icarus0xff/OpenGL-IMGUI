@@ -60,12 +60,12 @@ int main() {
 
   // Create a GLFWwindow object that we can use for GLFW's functions
   GLFWwindow *window =
-      glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
+      glfwCreateWindow(WIDTH, HEIGHT, "OpenGL Playground", nullptr, nullptr);
   glfwMakeContextCurrent(window);
 
   // Set the required callback functions
   glfwSetKeyCallback(window, key_callback);
-  glfwSetCursorPosCallback(window, mouse_callback);
+  //glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
 
   // GLFW Options
@@ -127,9 +127,7 @@ int main() {
       -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f,  1.0f};
   // Positions all containers
   glm::vec3 cubePositions[] = {
-      glm::vec3(2.0f, 5.0f, -15.0f),   glm::vec3(-1.5f, -2.2f, -2.5f),
-      glm::vec3(-3.8f, -2.0f, -12.3f), glm::vec3(2.4f, -0.4f, -3.5f),
-      glm::vec3(-1.7f, 3.0f, -7.5f),   glm::vec3(1.3f, -2.0f, -2.5f),
+      glm::vec3(0.0f, 0.0f, 0.0f),
   };
   // First, set the container's VAO (and VBO)
   GLuint VBO, containerVAO;
@@ -217,12 +215,21 @@ int main() {
   bool show_another_window = true;
   ImVec4 clear_color = ImColor(114, 144, 154);
 
+  //Shader parameters
+  float shininess=32.0f;
+  bool is_mouse = false;
+
   // Game loop
   while (!glfwWindowShouldClose(window)) {
     // Calculate deltatime of current frame
     GLfloat currentFrame = glfwGetTime();
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
+    if (is_mouse) {
+      glfwSetCursorPosCallback(window, mouse_callback);
+    }else{
+      glfwSetCursorPosCallback(window, nullptr);
+    }
 
     // Check if any events have been activiated (key pressed, mouse moved etc.)
     // and call corresponding response functions
@@ -232,8 +239,9 @@ int main() {
     do_movement();
 
     {
-      ImGui::Begin("Pannel", &show_another_window);
-      ImGui::Text("Hello");
+      ImGui::Begin("Shader", &show_another_window);
+      ImGui::SliderFloat("Shininess",&shininess,-100.0f,100.0f);
+      ImGui::Checkbox("Mouse Free View",&is_mouse);
       ImGui::End();
     }
 
@@ -280,7 +288,7 @@ int main() {
     // Set material properties
     glUniform1f(
         glGetUniformLocation(lightingShader.Program, "material.shininess"),
-        32.0f);
+        shininess);
 
     // Create camera transformations
     glm::mat4 view;
