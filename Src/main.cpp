@@ -214,7 +214,7 @@ int main() {
   //Set Imgui
   ImGui_ImplGlfwGL3_Init(window, true);
   bool show_test_window = true;
-  bool show_another_window = false;
+  bool show_another_window = true;
   ImVec4 clear_color = ImColor(114, 144, 154);
 
   // Game loop
@@ -232,9 +232,9 @@ int main() {
     do_movement();
 
     {
-      static float f = 0.0f;
-      ImGui::Text("Hello, world!");
-
+      ImGui::Begin("Pannel", &show_another_window);
+      ImGui::Text("Hello");
+      ImGui::End();
     }
 
     // Clear the colorbuffer
@@ -345,14 +345,15 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action,
 }
 
 void do_movement() {
+  ImGuiIO& io = ImGui::GetIO();
   // Camera controls
-  if (keys[GLFW_KEY_W])
+  if (io.KeysDown[GLFW_KEY_W])
     camera.ProcessKeyboard(FORWARD, deltaTime);
-  if (keys[GLFW_KEY_S])
+  if (io.KeysDown[GLFW_KEY_S])
     camera.ProcessKeyboard(BACKWARD, deltaTime);
-  if (keys[GLFW_KEY_A])
+  if (io.KeysDown[GLFW_KEY_A])
     camera.ProcessKeyboard(LEFT, deltaTime);
-  if (keys[GLFW_KEY_D])
+  if (io.KeysDown[GLFW_KEY_D])
     camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
