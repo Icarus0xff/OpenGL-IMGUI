@@ -16,8 +16,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 // Other includes
-#include "Camera.h"
-#include "Shader.h"
+#include "camera.h"
+#include "shader.h"
 
 #include <imgui.h>
 #include "imgui_impl_glfw_gl3.h"
@@ -50,9 +50,7 @@ GLfloat lastFrame = 0.0f; // Time of last frame
 // meshes
 unsigned int planeVAO;
 
-
-// The MAIN function, from here we start the application and run the game loop
-int main() {
+GLFWwindow *init() {
   // Init GLFW
   glfwInit();
   // Set all the required options for GLFW
@@ -69,7 +67,7 @@ int main() {
 
   // Set the required callback functions
   glfwSetKeyCallback(window, key_callback);
-  //glfwSetCursorPosCallback(window, mouse_callback);
+  // glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
 
   // GLFW Options
@@ -86,7 +84,13 @@ int main() {
 
   // OpenGL options
   glEnable(GL_DEPTH_TEST);
+  return window;
+}
 
+// The MAIN function, from here we start the application and run the game loop
+int main() {
+  GLFWwindow *window =init();
+  
   // Build and compile our shader program
   Shader lightingShader("lighting.vs", "lighting.frag");
   Shader lampShader("lamp.vs", "lamp.frag");
@@ -130,6 +134,7 @@ int main() {
       1.0f,  0.0f,  1.0f,  0.0f,  0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
       1.0f,  0.0f,  -0.5f, 0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
       -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f,  1.0f};
+
   // Positions all containers
   glm::vec3 cubePositions[] = {
       glm::vec3(0.0f, 0.0f, 0.0f),
@@ -184,19 +189,28 @@ int main() {
     25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  25.0f, 25.0f
   };
 
-  // plane VAO
+  // plane VAO & VBO
   unsigned int planeVBO;
   glGenVertexArrays(1, &planeVAO);
   glGenBuffers(1, &planeVBO);
+
   glBindVertexArray(planeVAO);
+
   glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
-  glEnableVertexAttribArray(0);
+
+
+
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(1);
+  glEnableVertexAttribArray(0);
+
+
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-  glEnableVertexAttribArray(2);
+  glEnableVertexAttribArray(1);
+
+
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
   glBindVertexArray(0);
 
   // Load textures
@@ -204,6 +218,7 @@ int main() {
   glGenTextures(1, &diffuseMap);
   glGenTextures(1, &specularMap);
   glGenTextures(1, &emissionMap);
+  
   int width, height;
   unsigned char *image;
   // Diffuse map
@@ -235,18 +250,40 @@ int main() {
                   GL_NEAREST_MIPMAP_NEAREST);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  // Set texture units
+
+  
   lightingShader.Use();
   glUniform1i(glGetUniformLocation(lightingShader.Program, "material.diffuse"),
               0);
   glUniform1i(glGetUniformLocation(lightingShader.Program, "material.specular"),
               1);
 
+
+  //setup plane's texture
+  GLuint planeMap;
+  glGenTextures(1, &planeMap);
+  glBindTexture(GL_TEXTURE_2D, planeMap);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                  GL_NEAREST_MIPMAP_NEAREST);
+
+  image = SOIL_load_image("container.jpg", &width, &height, 0,
+                          SOIL_LOAD_RGB);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+               GL_UNSIGNED_BYTE, image);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  SOIL_free_image_data(image);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
   lampShader.Use();
   glUniform1i(glGetUniformLocation(lampShader.Program, "texture1"),
-              1);
+              3);
   glUniform1i(glGetUniformLocation(lampShader.Program, "texture2"),
-              0);
+              1);
 
 
   //Set Imgui
@@ -370,9 +407,10 @@ int main() {
 
 
     
-
-    //Draw the floor
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, planeMap);
     lampShader.Use();
+    //Draw the floor
     // Get the uniform locations
     modelLoc = glGetUniformLocation(lampShader.Program, "model");
     viewLoc = glGetUniformLocation(lampShader.Program, "view");
