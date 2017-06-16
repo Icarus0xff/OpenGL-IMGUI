@@ -36,6 +36,12 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
 void do_movement();
 
+void renderScene(const Shader &shader);
+
+void renderCube();
+
+
+
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
 
@@ -256,9 +262,9 @@ int main() {
 
 
     lightingShader.Use();
-    glUniform1i(glGetUniformLocation(lightingShader.Program, "material.diffuse"),
+    glUniform1i(glGetUniformLocation(lightingShader.ID, "material.diffuse"),
                 0);
-    glUniform1i(glGetUniformLocation(lightingShader.Program, "material.specular"),
+    glUniform1i(glGetUniformLocation(lightingShader.ID, "material.specular"),
                 1);
 
 
@@ -283,9 +289,9 @@ int main() {
     glBindTexture(GL_TEXTURE_2D, 0);
 
     lampShader.Use();
-    glUniform1i(glGetUniformLocation(lampShader.Program, "texture1"),
+    glUniform1i(glGetUniformLocation(lampShader.ID, "texture1"),
                 3);
-    glUniform1i(glGetUniformLocation(lampShader.Program, "texture2"),
+    glUniform1i(glGetUniformLocation(lampShader.ID, "texture2"),
                 1);
 
 
@@ -299,7 +305,7 @@ int main() {
     float shininess = 32.0f;
     bool is_mouse = false;
 
-    Model ourModel("./bucket.obj");
+
 
     // Game loop
     while (!glfwWindowShouldClose(window)) {
@@ -333,14 +339,14 @@ int main() {
         // Use cooresponding shader when setting uniforms/drawing objects
         lightingShader.Use();
         GLint lightPosLoc =
-                glGetUniformLocation(lightingShader.Program, "light.position");
+                glGetUniformLocation(lightingShader.ID, "light.position");
         GLint lightSpotdirLoc =
-                glGetUniformLocation(lightingShader.Program, "light.direction");
+                glGetUniformLocation(lightingShader.ID, "light.direction");
         GLint lightSpotCutOffLoc =
-                glGetUniformLocation(lightingShader.Program, "light.cutOff");
+                glGetUniformLocation(lightingShader.ID, "light.cutOff");
         GLint lightSpotOuterCutOffLoc =
-                glGetUniformLocation(lightingShader.Program, "light.outerCutOff");
-        GLint viewPosLoc = glGetUniformLocation(lightingShader.Program, "viewPos");
+                glGetUniformLocation(lightingShader.ID, "light.outerCutOff");
+        GLint viewPosLoc = glGetUniformLocation(lightingShader.ID, "viewPos");
         glUniform3f(lightPosLoc, camera.Position.x, camera.Position.y,
                     camera.Position.z);
         glUniform3f(lightSpotdirLoc, camera.Front.x, camera.Front.y,
@@ -350,25 +356,25 @@ int main() {
         glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y,
                     camera.Position.z);
         // Set lights properties
-        glUniform3f(glGetUniformLocation(lightingShader.Program, "light.ambient"),
+        glUniform3f(glGetUniformLocation(lightingShader.ID, "light.ambient"),
                     0.1f, 0.1f, 0.1f);
         // We set the diffuse intensity a bit higher; note that the right lighting
         // conditions differ with each lighting method and environment.
         // Each environment and lighting type requires some tweaking of these
         // variables to get the best out of your environment.
-        glUniform3f(glGetUniformLocation(lightingShader.Program, "light.diffuse"),
+        glUniform3f(glGetUniformLocation(lightingShader.ID, "light.diffuse"),
                     0.8f, 0.8f, 0.8f);
-        glUniform3f(glGetUniformLocation(lightingShader.Program, "light.specular"),
+        glUniform3f(glGetUniformLocation(lightingShader.ID, "light.specular"),
                     1.0f, 1.0f, 1.0f);
-        glUniform1f(glGetUniformLocation(lightingShader.Program, "light.constant"),
+        glUniform1f(glGetUniformLocation(lightingShader.ID, "light.constant"),
                     1.0f);
-        glUniform1f(glGetUniformLocation(lightingShader.Program, "light.linear"),
+        glUniform1f(glGetUniformLocation(lightingShader.ID, "light.linear"),
                     0.09);
-        glUniform1f(glGetUniformLocation(lightingShader.Program, "light.quadratic"),
+        glUniform1f(glGetUniformLocation(lightingShader.ID, "light.quadratic"),
                     0.032);
         // Set material properties
         glUniform1f(
-                glGetUniformLocation(lightingShader.Program, "material.shininess"),
+                glGetUniformLocation(lightingShader.ID, "material.shininess"),
                 shininess);
 
         // Create camera transformations
@@ -377,9 +383,9 @@ int main() {
         glm::mat4 projection = glm::perspective(
                 camera.Zoom, (GLfloat) WIDTH / (GLfloat) HEIGHT, 0.1f, 100.0f);
         // Get the uniform locations
-        GLint modelLoc = glGetUniformLocation(lightingShader.Program, "model");
-        GLint viewLoc = glGetUniformLocation(lightingShader.Program, "view");
-        GLint projLoc = glGetUniformLocation(lightingShader.Program, "projection");
+        GLint modelLoc = glGetUniformLocation(lightingShader.ID, "model");
+        GLint viewLoc = glGetUniformLocation(lightingShader.ID, "view");
+        GLint projLoc = glGetUniformLocation(lightingShader.ID, "projection");
         // Pass the matrices to the shader
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
@@ -392,55 +398,7 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, specularMap);
 
 
-        // Draw floor
-        glm::mat4 model;
-
-
-        // Draw 10 containers with the same VAO and VBO information; only their
-        // world space coordinates differ
-        glBindVertexArray(containerVAO);
-
-        int ii = 0;
-        for (auto &i : cubePositions) {
-            model = glm::mat4();
-            model = glm::translate(model, i);
-            GLfloat angle = 20.0f * ii++;
-            model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
-
-
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, planeMap);
-        lampShader.Use();
-        //Draw the floor
-        // Get the uniform locations
-        modelLoc = glGetUniformLocation(lampShader.Program, "model");
-        viewLoc = glGetUniformLocation(lampShader.Program, "view");
-        projLoc = glGetUniformLocation(lampShader.Program, "projection");
-
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-        model = glm::mat4();
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-        glBindVertexArray(planeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-
-        lampShader.Use();
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-        // view/projection transformations
-
-        // render the loaded model
-        model = glm::translate(model, glm::vec3(0.0f, -.5f, -1.0f)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));	// it's a bit too big for our scene, so scale it down
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        ourModel.Draw(lampShader);
+        renderScene(lightingShader);
 
 
         glBindVertexArray(0);
@@ -449,7 +407,34 @@ int main() {
         //Rendering
         ImGui::Render();
         glfwSwapBuffers(window);
-    }
+    }/* {
+            glm::mat4 model;
+
+
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, planeMap);
+            //Draw the floor
+            // Get the uniform locations
+            modelLoc = glGetUniformLocation(lampShader.ID, "model");
+            viewLoc = glGetUniformLocation(lampShader.ID, "view");
+            projLoc = glGetUniformLocation(lampShader.ID, "projection");
+
+
+            lampShader.Use();
+            glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+            glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+            // view/projection transformations
+
+            // render the loaded model
+            model = glm::translate(model,
+                                   glm::vec3(0.0f, -.5f,
+                                             -1.0f)); // translate it down so it's at the center of the scene
+            model = glm::scale(model,
+                               glm::vec3(0.1f, 0.1f, 0.1f));    // it's a bit too big for our scene, so scale it down
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            ourModel.Draw(lampShader);
+        }*/
 
     // Terminate GLFW, clearing any resources allocated by GLFW.
     glfwTerminate();
@@ -504,3 +489,122 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
     camera.ProcessMouseScroll(yoffset);
 }
+
+
+// renderCube() renders a 1x1 3D cube in NDC.
+// -------------------------------------------------
+unsigned int cubeVAO = 0;
+unsigned int cubeVBO = 0;
+
+void renderCube() {
+    // initialize (if necessary)
+    if (cubeVAO == 0) {
+        float vertices[] = {
+                // back face
+                -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+                1.0f, 1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // top-right
+                1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // bottom-right
+                1.0f, 1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // top-right
+                -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+                -1.0f, 1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // top-left
+                // front face
+                -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
+                1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, // bottom-right
+                1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top-right
+                1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top-right
+                -1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, // top-left
+                -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
+                // left face
+                -1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
+                -1.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-left
+                -1.0f, -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
+                -1.0f, -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
+                -1.0f, -1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-right
+                -1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
+                // right face
+                1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-left
+                1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-right
+                1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-right
+                1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-right
+                1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-left
+                1.0f, -1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-left
+                // bottom face
+                -1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
+                1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, // top-left
+                1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom-left
+                1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom-left
+                -1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom-right
+                -1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
+                // top face
+                -1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top-left
+                1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
+                1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // top-right
+                1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
+                -1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top-left
+                -1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f  // bottom-left
+        };
+        glGenVertexArrays(1, &cubeVAO);
+        glGenBuffers(1, &cubeVBO);
+        // fill buffer
+        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        // link vertex attributes
+        glBindVertexArray(cubeVAO);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+    // render Cube
+    glBindVertexArray(cubeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+}
+
+
+Model *ourModel;
+bool isInit = false;
+
+// renders the 3D scene
+// --------------------
+void renderScene(const Shader &shader) {
+    // floor
+    glm::mat4 model;
+    shader.setMat4("model", model);
+    glBindVertexArray(planeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    // bucket
+    if(!isInit){
+        ourModel = new Model("./bucket.obj");
+        isInit = true;
+    }
+    model = glm::mat4();
+    model = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.0));
+    model = glm::scale(model, glm::vec3(0.2f));
+    shader.setMat4("model", model);
+    ourModel->Draw(shader);
+    // cubes
+//    model = glm::mat4();
+//    model = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.0));
+//    model = glm::scale(model, glm::vec3(0.5f));
+//    shader.setMat4("model", model);
+//    renderCube();
+    model = glm::mat4();
+    model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
+    model = glm::scale(model, glm::vec3(0.5f));
+    shader.setMat4("model", model);
+    renderCube();
+    model = glm::mat4();
+    model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 2.0));
+    model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+    model = glm::scale(model, glm::vec3(0.25));
+    shader.setMat4("model", model);
+    renderCube();
+}
+
+
+
