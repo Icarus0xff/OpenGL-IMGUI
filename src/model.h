@@ -139,7 +139,7 @@ private:
                 indices.push_back(face.mIndices[j]);
         }
         // process materials
-        if(mesh->mMaterialIndex >= 0)
+        if(true)
         {
             aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
             // we assume a convention for sampler names in the shaders. Each diffuse texture should be named

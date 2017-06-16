@@ -299,7 +299,7 @@ int main() {
     float shininess = 32.0f;
     bool is_mouse = false;
 
-    Model ourModel("./head.obj");
+    Model ourModel("./bucket.obj");
 
     // Game loop
     while (!glfwWindowShouldClose(window)) {
