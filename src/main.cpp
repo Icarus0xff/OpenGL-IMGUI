@@ -204,13 +204,6 @@ int main() {
     glBindTexture(GL_TEXTURE_2D, 0);
 
 
-    lightingShader.use();
-    glUniform1i(glGetUniformLocation(lightingShader.ID, "material.diffuse"),
-                0);
-    glUniform1i(glGetUniformLocation(lightingShader.ID, "material.specular"),
-                1);
-
-
     //setup plane's texture
     GLuint planeMap;
     glGenTextures(1, &planeMap);
@@ -265,7 +258,6 @@ int main() {
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     // attach depth texture as FBO's depth buffer
-
     glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
     glDrawBuffer(GL_NONE);
@@ -275,7 +267,8 @@ int main() {
 
     lightingShader.use();
     lightingShader.setInt("diffuseTexture", 0);
-    lightingShader.setInt("shadowMap", 1);
+    lightingShader.setInt("shadowMap", 4);
+
     debugDepthQuad.use();
     debugDepthQuad.setInt("depthMap", 0);
 
@@ -340,10 +333,13 @@ int main() {
         renderScene(simpleDepthShader);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+        // reset viewport
         glViewport(0, 0, WIDTH, HEIGHT);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
+        // 2. render scene as normal using the generated depth/shadow map
+        // --------------------------------------------------------------
         lightingShader.use();
         glm::mat4 projection = glm::perspective(camera.Zoom, (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
@@ -356,7 +352,7 @@ int main() {
         lightingShader.setVec3("lightColor", lightColor);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, diffuseMap);
-        glActiveTexture(GL_TEXTURE1);
+        glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_2D, depthMap);
         renderScene(lightingShader);
 
@@ -368,73 +364,6 @@ int main() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, depthMap);
         //renderQuad();
-
-
-
-//        glViewport(0, 0, WIDTH, HEIGHT);
-//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-        // Set lights properties
-//        glUniform3f(glGetUniformLocation(lightingShader.ID, "light.ambient"),
-//                    0.1f, 0.1f, 0.1f);
-//        // We set the diffuse intensity a bit higher; note that the right lighting
-//        // conditions differ with each lighting method and environment.
-//        // Each environment and lighting type requires some tweaking of these
-//        // variables to get the best out of your environment.
-//        glUniform3f(glGetUniformLocation(lightingShader.ID, "light.diffuse"),
-//                    0.8f, 0.8f, 0.8f);
-//        glUniform3f(glGetUniformLocation(lightingShader.ID, "light.specular"),
-//                    1.0f, 1.0f, 1.0f);
-//        glUniform1f(glGetUniformLocation(lightingShader.ID, "light.constant"),
-//                    1.0f);
-//        glUniform1f(glGetUniformLocation(lightingShader.ID, "light.linear"),
-//                    0.09);
-//        glUniform1f(glGetUniformLocation(lightingShader.ID, "light.quadratic"),
-//                    0.032);
-//        // Set material properties
-//        glUniform1f(
-//                glGetUniformLocation(lightingShader.ID, "material.shininess"),
-//                shininess);
-//
-//        // Create camera transformations
-//        glm::mat4 view;
-//        view = camera.GetViewMatrix();
-//        glm::mat4 projection = glm::perspective(
-//                camera.Zoom, (GLfloat) WIDTH / (GLfloat) HEIGHT, 0.1f, 100.0f);
-//        // Get the uniform locations
-//        GLint modelLoc = glGetUniformLocation(lightingShader.ID, "model");
-//        GLint viewLoc = glGetUniformLocation(lightingShader.ID, "view");
-//        GLint projLoc = glGetUniformLocation(lightingShader.ID, "projection");
-//        // Pass the matrices to the shader
-//        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-//        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-//
-//
-//        // use cooresponding shader when setting uniforms/drawing objects
-//        lightingShader.use();
-//        GLint lightPosLoc =
-//                glGetUniformLocation(lightingShader.ID, "light.position");
-//        GLint lightSpotdirLoc =
-//                glGetUniformLocation(lightingShader.ID, "light.direction");
-//        GLint lightSpotCutOffLoc =
-//                glGetUniformLocation(lightingShader.ID, "light.cutOff");
-//        GLint lightSpotOuterCutOffLoc =
-//                glGetUniformLocation(lightingShader.ID, "light.outerCutOff");
-//        GLint viewPosLoc = glGetUniformLocation(lightingShader.ID, "viewPos");
-//
-//        glUniform3f(lightPosLoc, camera.Position.x, camera.Position.y,
-//                    camera.Position.z);
-//        glUniform3f(lightSpotdirLoc, camera.Front.x, camera.Front.y,
-//                    camera.Front.z);
-//        glUniform1f(lightSpotCutOffLoc, glm::cos(glm::radians(12.5f)));
-//        glUniform1f(lightSpotOuterCutOffLoc, glm::cos(glm::radians(17.5f)));
-//        glUniform3f(viewPosLoc, camera.Position.x, camera.Position.y,
-//                    camera.Position.z);
-//        renderScene(lightingShader);
-//
-//
-//        glBindVertexArray(0);
 
         // Swap the screen buffers
         //Rendering
@@ -483,8 +412,7 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     }
 
     GLfloat xoffset = xpos - lastX;
-    GLfloat yoffset =
-            lastY - ypos; // Reversed since y-coordinates go from bottom to left
+    GLfloat yoffset = lastY - ypos; // Reversed since y-coordinates go from bottom to left
 
     lastX = xpos;
     lastY = ypos;
