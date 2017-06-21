@@ -12,5 +12,4 @@ void main()
 {
 
     color = texture(texture1, TexCoord);
-    //color = vec4(0.8);
 }

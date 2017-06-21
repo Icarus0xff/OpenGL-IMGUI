@@ -105,7 +105,7 @@ int main() {
 
     // Build and compile our shader program
     Shader lightingShader("shadow.vs", "shadow.frag");
-    Shader lampShader("lamp.vs", "lamp.frag");
+    Shader lampShader("texture.vs", "texture.frag");
     Shader simpleDepthShader("depth.vs", "depth.frag");
     Shader debugDepthQuad("quad.vs", "quad.frag");
 
